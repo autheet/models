@@ -23,6 +23,18 @@ The following sections detail the data models that support this architecture and
 
 ---
 
+## The Client Pattern: The Shared Secret
+
+At the heart of Autheet's privacy-preserving discovery mechanism is the concept of the `clientPattern`. This is a temporary, common secret that is *derived* independently by two or more devices that are physically co-present and simultaneously using one of Autheet's supported finding technologies (Shaking, Bluetooth, UWB, NFC Card).
+
+The methods used to prove co-presence generate this `clientPattern` from the environmental data or shared physical token. For example:
+*   **Shaking**: The `clientPattern` is a quantized representation of the synchronized motion detected by devices' sensors.
+*   **Bluetooth**: The `clientPattern` is formed by sorting and concatenating the ephemeral session nonces exchanged via BLE advertisements.
+*   **UWB**: (Details to be added regarding UWB-specific pattern derivation, likely involving distance/angle data).
+*   **NFC Card**: The `clientPattern` is a nonce read from or written to a shared NFC card.
+
+Crucially, the `clientPattern` itself is **never transmitted or stored remotely**. It exists only in the memory of the co-present devices for a very short period. It acts as a shared secret key that only these specific devices possess. This `clientPattern` is the primary input for the `PatternCryptor`, which uses it, along with the `auHourlyDigest`, to perform cryptographic operations necessary for generating and decrypting the `FindHandshake` messages described in the Handshake Protocol section. This ensures that only devices that successfully generated the identical `clientPattern` can participate in the handshake and discover each other.
+
 ## Application Architecture and Initialization
 
 
