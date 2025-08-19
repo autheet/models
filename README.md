@@ -6,7 +6,7 @@ This space is intended for discussion, inspiration, and providing implementation
 
 For detailed explanations of the models, including their serialization strategies, relationships, and role within the Autheet protocol, please refer to the dedicated document:
 
-[Autheet Protocol Definition](/home/user/myapp/lib/models/Autheet%20Protocol%20Definition.md)
+[Autheet Protocol Definition](Autheet%20Protocol%20Definition.md)
 
 For a high-level overview and the vision behind Autheet, please see the:
 
