@@ -2,6 +2,42 @@
 
 This document outlines the core data models and their interactions within the Autheet system.
 
+## Introduction to Autheet
+
+Autheet is a privacy-preserving authentication and verifiable event logging application. Its core purpose is to allow users to securely identify and verify the presence of other users in a physical proximity, and to create a tamper-evident record of these interactions (referred to as "meetings").
+
+A unique aspect of Autheet's approach is the derivation and sharing of common secrets (referred to as `clientPattern`s) from environmental measurements and device interactions. Instead of exchanging pre-shared keys or relying solely on a centralized server for discovery, Autheet leverages various finding technologies to generate a shared secret between nearby devices simultaneously. These technologies include:
+
+*   **Shaking**: Analyzing synchronized device movement patterns.
+*   **Bluetooth**: Utilizing Bluetooth signal characteristics or ephemeral identifiers.
+*   **UWB (Ultra-Wideband)**: Employing precise UWB ranging data.
+*   **NFC (Near Field Communication)**: Facilitating close-proximity key exchange.
+
+These environmental measurements are processed client-side to derive a temporary, shared `clientPattern`. This pattern is never directly transmitted or stored in a publicly accessible location like Firestore.
+
+To add another layer of security and unpredictability that is independent of Autheet's operators, the app incorporates a time-based public value called the `auHourlyDigest`. This digest is derived from an external, publicly verifiable source that updates regularly, such as the Bitcoin blockchain's block height. By incorporating `auHourlyDigest` into cryptographic operations, Autheet ensures that certain time-sensitive secrets or identifiers change in a way that cannot be predicted or manipulated by the Autheet service itself.
+
+The sharing of information that relies on the `auHourlyDigest` (such as encrypted payloads in the handshake) is restricted to devices that have been approved by **Firebase App Check**. App Check helps verify that incoming traffic to Firebase services originates from your genuine app, mitigating abuse and ensuring that only legitimate instances of the Autheet application can participate in the secure discovery process.
+
+The following sections detail the data models that support this architecture and the protocols governing their use.
+
+---
+
+## The Client Pattern: The Shared Secret
+
+At the heart of Autheet's privacy-preserving discovery mechanism is the concept of the `clientPattern`. This is a temporary, common secret that is *derived* independently by two or more devices that are physically co-present and simultaneously using one of Autheet's supported finding technologies (Shaking, Bluetooth, UWB, NFC Card).
+
+The methods used to prove co-presence generate this `clientPattern` from the environmental data or shared physical token. For example:
+*   **Shaking**: The `clientPattern` is a quantized representation of the synchronized motion detected by devices' sensors.
+*   **Bluetooth**: The `clientPattern` is formed by sorting and concatenating the ephemeral session nonces exchanged via BLE advertisements.
+*   **UWB**: (Details to be added regarding UWB-specific pattern derivation, likely involving distance/angle data).
+*   **NFC Card**: The `clientPattern` is a nonce read from or written to a shared NFC card.
+
+Crucially, the `clientPattern` itself is **never transmitted or stored remotely**. It exists only in the memory of the co-present devices for a very short period. It acts as a shared secret key that only these specific devices possess. This `clientPattern` is the primary input for the `PatternCryptor`, which uses it, along with the `auHourlyDigest`, to perform cryptographic operations necessary for generating and decrypting the `FindHandshake` messages described in the Handshake Protocol section. This ensures that only devices that successfully generated the identical `clientPattern` can participate in the handshake and discover each other.
+
+## Application Architecture and Initialization
+
+
 ## Model Serialization Strategy
 
 A core principle of the Autheet architecture is the strict separation of data intended for remote storage (Firestore) versus local caching (SharedPreferences). This separation is crucial for security, privacy, and performance. To enforce this, every persistent data model implements a clear set of serialization methods.
@@ -18,9 +54,10 @@ A core principle of the Autheet architecture is the strict separation of data in
     *   **Characteristics**: Data must be fully self-contained and restorable. It can safely contain decrypted data and client secrets as it resides in the app's secure storage on the user's device.
     *   **Methods**: `toLocalJson()` and `fromLocalJson()`.
 
----
-
 ## Model-by-Model Breakdown
+
+The following section details the individual data models used within the Autheet application.
+
 
 ### `PublicKey`
 
@@ -202,14 +239,11 @@ This new section outlines the sequence of events from creating a meeting to sign
     *   The `MeetingModel`, the `MeetingSigningData` block, and the resulting `MeetingSignature` are all written to Firestore.
     *   The meeting status is updated to `stored`, indicating it is complete and cryptographically sealed.
 
----
+
 ## Missing Protocol and Model Definitions
 
 This section identifies areas where the current models and protocol definition are incomplete, pointing to future work.
 
-1.  **Meeting Secret Sharing Mechanism**:
-    *   **The Gap**: Currently, the `meetingSecret` is generated and held exclusively by the meeting creator. This is sufficient for the creator to decrypt their own meeting records. However, the protocol does not define a secure method for sharing this `meetingSecret` with the other participants.
-    *   **The Implication**: Without the `meetingSecret`, other participants cannot decrypt the `encryptedPayload` of the `MeetingModel`. This means they cannot independently verify the full list of participants or other sensitive meeting details from the Firestore record. This is a critical missing piece for multi-party verification.
 
 2.  **Absence of Certificate Models**:
     *   **The Gap**: The current system relies on a "Trust on First Use" (TOFU) model for public keys, which are stored raw in Firestore. The protocol and models lack any structure for handling a Public Key Infrastructure (PKI).
