@@ -2,6 +2,30 @@
 
 This document outlines the core data models and their interactions within the Autheet system.
 
+## Introduction to Autheet
+
+Autheet is a privacy-preserving authentication and verifiable event logging application. Its core purpose is to allow users to securely identify and verify the presence of other users in a physical proximity, and to create a tamper-evident record of these interactions (referred to as "meetings").
+
+A unique aspect of Autheet's approach is the derivation and sharing of common secrets (referred to as `clientPattern`s) from environmental measurements and device interactions. Instead of exchanging pre-shared keys or relying solely on a centralized server for discovery, Autheet leverages various finding technologies to generate a shared secret between nearby devices simultaneously. These technologies include:
+
+*   **Shaking**: Analyzing synchronized device movement patterns.
+*   **Bluetooth**: Utilizing Bluetooth signal characteristics or ephemeral identifiers.
+*   **UWB (Ultra-Wideband)**: Employing precise UWB ranging data.
+*   **NFC (Near Field Communication)**: Facilitating close-proximity key exchange.
+
+These environmental measurements are processed client-side to derive a temporary, shared `clientPattern`. This pattern is never directly transmitted or stored in a publicly accessible location like Firestore.
+
+To add another layer of security and unpredictability that is independent of Autheet's operators, the app incorporates a time-based public value called the `auHourlyDigest`. This digest is derived from an external, publicly verifiable source that updates regularly, such as the Bitcoin blockchain's block height. By incorporating `auHourlyDigest` into cryptographic operations, Autheet ensures that certain time-sensitive secrets or identifiers change in a way that cannot be predicted or manipulated by the Autheet service itself.
+
+The sharing of information that relies on the `auHourlyDigest` (such as encrypted payloads in the handshake) is restricted to devices that have been approved by **Firebase App Check**. App Check helps verify that incoming traffic to Firebase services originates from your genuine app, mitigating abuse and ensuring that only legitimate instances of the Autheet application can participate in the secure discovery process.
+
+The following sections detail the data models that support this architecture and the protocols governing their use.
+
+---
+
+## Application Architecture and Initialization
+
+
 ## Model Serialization Strategy
 
 A core principle of the Autheet architecture is the strict separation of data intended for remote storage (Firestore) versus local caching (SharedPreferences). This separation is crucial for security, privacy, and performance. To enforce this, every persistent data model implements a clear set of serialization methods.
@@ -21,6 +45,60 @@ A core principle of the Autheet architecture is the strict separation of data in
 ---
 
 ## Model-by-Model Breakdown
+
+---
+
+## Application Architecture and Initialization
+
+This section outlines the initial setup and core architectural components that are initialized when the Autheet app starts, as seen in `lib/main.dart`.
+
+### Firebase Initialization and Configuration
+
+The application leverages Firebase services extensively. The initialization process sets up the necessary connections and configurations.
+
+*   **`Firebase.initializeApp`**: This is the first step, initializing Firebase with platform-specific options provided by `DefaultFirebaseOptions.currentPlatform`.
+
+*   **Firestore Persistence**:
+    *   For web, in-memory persistence is enabled using `FirebaseFirestore.instance.enablePersistence(const PersistenceSettings(synchronizeTabs: true))`. This caches data for the current session.
+    *   For mobile platforms (Android and iOS), persistent disk caching is enabled by default, but it's explicitly configured using `FirebaseFirestore.instance.settings` with `persistenceEnabled: true` and `cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED` for offline capabilities.
+
+*   **Firebase App Check**: App Check is activated to help ensure that requests to Firebase services are coming from your legitimate app.
+    *   **Web**: Uses `ReCaptchaV3Provider` with a configured site key.
+    *   **Android**: Uses `AndroidProvider.playIntegrity` in release mode and `AndroidProvider.debug` in debug mode.
+    *   **Apple (iOS and macOS)**: Uses `AppleProvider.appAttest` in release mode and `AppleProvider.debug` in debug mode.
+
+*   **Firebase Analytics and Crashlytics**: These services are configured based on user privacy settings managed by the `SettingsService`. Data collection is enabled or disabled accordingly using `FirebaseAnalytics.instance.setAnalyticsCollectionEnabled()` and `FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled()`. Flutter errors are also routed to Crashlytics using `FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError`.
+
+### Service Instances and Initialization
+
+Several core service instances are created and initialized during the application startup. These services encapsulate specific functionalities.
+
+*   **`DatabaseService`**: Likely handles interactions with local databases or storage mechanisms.
+*   **`NTPService`**: Manages Network Time Protocol synchronization, crucial for time-sensitive operations within the app. It is initialized with the `DatabaseService`.
+*   **`SettingsService`**: Loads and manages application settings, including privacy preferences for analytics and crash reporting.
+*   **`UserSessionProvider`**: Manages the current user's session information and authentication state.
+*   **`NotificationService`**: Handles displaying notifications to the user.
+*   **`FirebaseFunctions`**: Provides an interface for interacting with Firebase Cloud Functions, specifically configured for the `europe-west1` region.
+
+These services are initialized asynchronously using `Future.wait()` to ensure they are ready before the main application UI is built.
+
+### Provider Usage for State Management and Dependency Injection
+
+The application uses the `provider` package for state management and dependency injection.
+
+*   **`MultiProvider`**: In `lib/main.dart`, `MultiProvider` is used to make instances of the initialized services and other providers available throughout the widget tree.
+*   **Making Services Available**: Instances of `DatabaseService`, `NTPService`, `SettingsService`, `FirebaseFunctions`, `UserSessionProvider`, `NotificationService`, and `FirebaseFirestore` are provided using `Provider.value`.
+*   **ChangeNotifier Providers**: `NTPService`, `SettingsService`, `UserSessionProvider`, and `NfcProvider` are exposed as `ChangeNotifierProvider`s, allowing widgets to react to changes in their state.
+*   **Dependency Injection**: This pattern allows widgets and other parts of the application to access necessary services and data without needing to create instances themselves, promoting modularity and testability. For example, the `AutheetApp` widget receives the `NTPService` directly.
+
+This provider setup ensures that essential services and shared state are easily accessible to the parts of the application that need them.
+
+---
+
+## Model-by-Model Breakdown
+
+The following section details the individual data models used within the Autheet application.
+
 
 ### `PublicKey`
 
