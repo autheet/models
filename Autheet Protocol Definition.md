@@ -42,59 +42,6 @@ A core principle of the Autheet architecture is the strict separation of data in
     *   **Characteristics**: Data must be fully self-contained and restorable. It can safely contain decrypted data and client secrets as it resides in the app's secure storage on the user's device.
     *   **Methods**: `toLocalJson()` and `fromLocalJson()`.
 
----
-
-## Model-by-Model Breakdown
-
----
-
-## Application Architecture and Initialization
-
-This section outlines the initial setup and core architectural components that are initialized when the Autheet app starts, as seen in `lib/main.dart`.
-
-### Firebase Initialization and Configuration
-
-The application leverages Firebase services extensively. The initialization process sets up the necessary connections and configurations.
-
-*   **`Firebase.initializeApp`**: This is the first step, initializing Firebase with platform-specific options provided by `DefaultFirebaseOptions.currentPlatform`.
-
-*   **Firestore Persistence**:
-    *   For web, in-memory persistence is enabled using `FirebaseFirestore.instance.enablePersistence(const PersistenceSettings(synchronizeTabs: true))`. This caches data for the current session.
-    *   For mobile platforms (Android and iOS), persistent disk caching is enabled by default, but it's explicitly configured using `FirebaseFirestore.instance.settings` with `persistenceEnabled: true` and `cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED` for offline capabilities.
-
-*   **Firebase App Check**: App Check is activated to help ensure that requests to Firebase services are coming from your legitimate app.
-    *   **Web**: Uses `ReCaptchaV3Provider` with a configured site key.
-    *   **Android**: Uses `AndroidProvider.playIntegrity` in release mode and `AndroidProvider.debug` in debug mode.
-    *   **Apple (iOS and macOS)**: Uses `AppleProvider.appAttest` in release mode and `AppleProvider.debug` in debug mode.
-
-*   **Firebase Analytics and Crashlytics**: These services are configured based on user privacy settings managed by the `SettingsService`. Data collection is enabled or disabled accordingly using `FirebaseAnalytics.instance.setAnalyticsCollectionEnabled()` and `FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled()`. Flutter errors are also routed to Crashlytics using `FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError`.
-
-### Service Instances and Initialization
-
-Several core service instances are created and initialized during the application startup. These services encapsulate specific functionalities.
-
-*   **`DatabaseService`**: Likely handles interactions with local databases or storage mechanisms.
-*   **`NTPService`**: Manages Network Time Protocol synchronization, crucial for time-sensitive operations within the app. It is initialized with the `DatabaseService`.
-*   **`SettingsService`**: Loads and manages application settings, including privacy preferences for analytics and crash reporting.
-*   **`UserSessionProvider`**: Manages the current user's session information and authentication state.
-*   **`NotificationService`**: Handles displaying notifications to the user.
-*   **`FirebaseFunctions`**: Provides an interface for interacting with Firebase Cloud Functions, specifically configured for the `europe-west1` region.
-
-These services are initialized asynchronously using `Future.wait()` to ensure they are ready before the main application UI is built.
-
-### Provider Usage for State Management and Dependency Injection
-
-The application uses the `provider` package for state management and dependency injection.
-
-*   **`MultiProvider`**: In `lib/main.dart`, `MultiProvider` is used to make instances of the initialized services and other providers available throughout the widget tree.
-*   **Making Services Available**: Instances of `DatabaseService`, `NTPService`, `SettingsService`, `FirebaseFunctions`, `UserSessionProvider`, `NotificationService`, and `FirebaseFirestore` are provided using `Provider.value`.
-*   **ChangeNotifier Providers**: `NTPService`, `SettingsService`, `UserSessionProvider`, and `NfcProvider` are exposed as `ChangeNotifierProvider`s, allowing widgets to react to changes in their state.
-*   **Dependency Injection**: This pattern allows widgets and other parts of the application to access necessary services and data without needing to create instances themselves, promoting modularity and testability. For example, the `AutheetApp` widget receives the `NTPService` directly.
-
-This provider setup ensures that essential services and shared state are easily accessible to the parts of the application that need them.
-
----
-
 ## Model-by-Model Breakdown
 
 The following section details the individual data models used within the Autheet application.
@@ -280,14 +227,11 @@ This new section outlines the sequence of events from creating a meeting to sign
     *   The `MeetingModel`, the `MeetingSigningData` block, and the resulting `MeetingSignature` are all written to Firestore.
     *   The meeting status is updated to `stored`, indicating it is complete and cryptographically sealed.
 
----
+
 ## Missing Protocol and Model Definitions
 
 This section identifies areas where the current models and protocol definition are incomplete, pointing to future work.
 
-1.  **Meeting Secret Sharing Mechanism**:
-    *   **The Gap**: Currently, the `meetingSecret` is generated and held exclusively by the meeting creator. This is sufficient for the creator to decrypt their own meeting records. However, the protocol does not define a secure method for sharing this `meetingSecret` with the other participants.
-    *   **The Implication**: Without the `meetingSecret`, other participants cannot decrypt the `encryptedPayload` of the `MeetingModel`. This means they cannot independently verify the full list of participants or other sensitive meeting details from the Firestore record. This is a critical missing piece for multi-party verification.
 
 2.  **Absence of Certificate Models**:
     *   **The Gap**: The current system relies on a "Trust on First Use" (TOFU) model for public keys, which are stored raw in Firestore. The protocol and models lack any structure for handling a Public Key Infrastructure (PKI).
