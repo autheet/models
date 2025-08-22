@@ -26,7 +26,7 @@ void main() {
             .readAsString();
       } catch (e) {
         print(
-          'Warning: Could not read protocol definition file from lib/models/$autheetProtocolDefinitionPath: $e',
+          'Warning: Could not read protocol definition file from $autheetProtocolDefinitionPath: $e',
         );
       }
     }
