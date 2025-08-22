@@ -7,6 +7,7 @@ import 'dart:math';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:autheet/models/protocol_version.dart';
+import 'package:flutter/foundation.dart';
 
 // --- Date/Time Utility ---
 
@@ -276,7 +277,7 @@ class MeetingModel {
       );
       return copyWith(decryptedData: data, meetingSecret: clientSecret);
     } catch (e) {
-      print("Failed to decrypt meeting payload: $e");
+      debugPrint("Failed to decrypt meeting payload: $e");
       return this;
     }
   }
