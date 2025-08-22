@@ -4,14 +4,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'dart:convert';
-
 import 'package:autheet/models/protocol_version.dart'; // Import the protocol_version.dart file
 
 void main() {
+  // Define the path for the output file in the working directory.
+  const String outputFilePath = 'protocol_compliance_test_result.md';
+
   // This test uses an LLM to check for differences between the protocol specification and the implementation in the data models.
   test('Protocol Compliance Test', () async {
     // Define the models directory path.
     const modelsPath = 'lib/models';
+
 
     // Directly use the constants from protocol_version.dart
     const isDraft = autheetProtocolVersionImplementationStatusDraft;
@@ -19,32 +22,40 @@ void main() {
     const protocolDefinitionUrl = autheetProtocolDefinitionUrl;
 
 
-    String protocolDefinitionContent;
-    try {
-      protocolDefinitionContent = await File(
-        'lib/models/$protocolDefinitionFileName', // Use the relative path
-      ).readAsString();
-    } catch (e) {
-      // Fallback to downloading from the URL if reading the local file fails.
-      // If reading the file fails, try downloading from the URL.
-      // print('Failed to read protocol definition file: $e. Trying to download.');
-      // final response = await http.get(Uri.parse(protocolDefinitionUrl));
-      // protocolDefinitionContent = response.body;
-      fail(
-        'Could not read protocol definition file from $autheetProtocolDefinitionPath',
-      );
+    String? protocolDefinitionContent;
+    final localProtocolDefinitionFile = File('$protocolDefinitionFileName');
+    if (await localProtocolDefinitionFile.exists()) {
+      try {
+        protocolDefinitionContent = await localProtocolDefinitionFile.readAsString();
+      } catch (e) {
+        print(
+          'Warning: Could not read protocol definition file from lib/models/$autheetProtocolDefinitionPath: $e',
+        );
+      }
     }
-
-    // If not in draft mode, always try to download from the URL to ensure a recent and publicized definition is used.
-    if (!isDraft) {
+    // If local file reading failed OR if not in draft mode, attempt to download from the URL.
+    if (protocolDefinitionContent == null || !isDraft) {
+      print('Attempting to download protocol definition from $protocolDefinitionUrl');
       final response = await http.get(Uri.parse(protocolDefinitionUrl));
+
       if (response.statusCode != 200) {
         fail(
-          'Could not download protocol definition from $protocolDefinitionUrl. Status code: ${response.statusCode}. Before releasing, ensure the protocol definition is publicized and recent.',
+          'Could not download protocol definition from $protocolDefinitionUrl. Status code: ${response.statusCode}. '
+          'For non-draft releases, the protocol definition must be publicized and accessible.',
         );
       }
       protocolDefinitionContent = response.body;
+    } else {
+      // If in draft mode and local file was successfully read, print a message.
+      print('Using local protocol definition file: lib/models/$autheetProtocolDefinitionPath');
     }
+ if (protocolDefinitionContent == null || protocolDefinitionContent.isEmpty) {
+      fail(
+        'Protocol definition content is empty after attempting to read or download. '
+        'Ensure the local file exists and is not empty, or the URL provides valid content.',
+      );
+    }
+    
     // 5. Construct the concise prompt that instructs the LLM on its task.
     final prompt = """
       You are a protocol compliance checker. Your context includes a markdown protocol definition and several Dart data model files.
@@ -72,8 +83,7 @@ $protocolDefinitionContent
       geminiCommand,
       [
       'gen',
-      ],
-      workingDirectory: modelsPath,
+      ]
     );
     process.stdin.write(fullPrompt);
     await process.stdin.close();
@@ -94,26 +104,20 @@ $protocolDefinitionContent
       'No differences found.',
     );
 
+    // Write the Gemini output to the specified file in the working directory.
+    final outputFile = File(outputFilePath);
+    await outputFile.writeAsString(geminiOutput);
+    print('Gemini output written to ${outputFile.path}');
+
     // 9. Handle differences based on draft status.
     if (isDraft) {
-      if (hasDifferences) {
-        final differencesFile = File('$modelsPath/differences.md');
-        await differencesFile.writeAsString(geminiOutput);
-        print(
-          'Protocol differences found and written to $modelsPath/differences.md',
-        );
-      } else {
-        final differencesFile = File('$modelsPath/differences.md');
-        if (await differencesFile.exists()) {
-          await differencesFile.delete();
-        }
-      }
       // In draft mode, the test always passes.
       expect(true, isTrue);
     } else {
       if (hasDifferences) {
+        // In non-draft mode, fail the test if differences are found.
         fail(
-          'Protocol compliance check failed. Differences found: $geminiOutput',
+          'Protocol compliance check failed. Differences found. Details in ${outputFile.path}',
         );
       } else {
         // In release mode, the test passes only if there are no differences.
