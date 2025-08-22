@@ -15,18 +15,17 @@ void main() {
     // Define the models directory path.
     const modelsPath = 'lib/models';
 
-
     // Directly use the constants from protocol_version.dart
     const isDraft = autheetProtocolVersionImplementationStatusDraft;
     const protocolDefinitionFileName = autheetProtocolDefinitionPath;
     const protocolDefinitionUrl = autheetProtocolDefinitionUrl;
 
-
     String? protocolDefinitionContent;
     final localProtocolDefinitionFile = File('$protocolDefinitionFileName');
     if (await localProtocolDefinitionFile.exists()) {
       try {
-        protocolDefinitionContent = await localProtocolDefinitionFile.readAsString();
+        protocolDefinitionContent = await localProtocolDefinitionFile
+            .readAsString();
       } catch (e) {
         print(
           'Warning: Could not read protocol definition file from lib/models/$autheetProtocolDefinitionPath: $e',
@@ -35,7 +34,9 @@ void main() {
     }
     // If local file reading failed OR if not in draft mode, attempt to download from the URL.
     if (protocolDefinitionContent == null || !isDraft) {
-      print('Attempting to download protocol definition from $protocolDefinitionUrl');
+      print(
+        'Attempting to download protocol definition from $protocolDefinitionUrl',
+      );
       final response = await http.get(Uri.parse(protocolDefinitionUrl));
 
       if (response.statusCode != 200) {
@@ -47,15 +48,18 @@ void main() {
       protocolDefinitionContent = response.body;
     } else {
       // If in draft mode and local file was successfully read, print a message.
-      print('Using local protocol definition file: lib/models/$autheetProtocolDefinitionPath');
+      print(
+        'Using local protocol definition file: lib/models/$autheetProtocolDefinitionPath',
+      );
     }
- if (protocolDefinitionContent == null || protocolDefinitionContent.isEmpty) {
+    if (protocolDefinitionContent == null ||
+        protocolDefinitionContent.isEmpty) {
       fail(
         'Protocol definition content is empty after attempting to read or download. '
         'Ensure the local file exists and is not empty, or the URL provides valid content.',
       );
     }
-    
+
     // 5. Construct the concise prompt that instructs the LLM on its task.
     final prompt = """
       You are a protocol compliance checker. Your context includes a markdown protocol definition and several Dart data model files.
@@ -70,7 +74,8 @@ void main() {
     final geminiCommand = isNixEnvironment ? 'gemini-cli' : 'gemini';
 
     // 7. Construct the full prompt content including the protocol definition.
-    final fullPrompt = '''
+    final fullPrompt =
+        '''
 $prompt
 
 <CODE_BLOCK>
@@ -79,12 +84,7 @@ $protocolDefinitionContent
 ''';
 
     // 8. Execute the Gemini CLI command and pipe the full prompt content to its standard input.
-    final process = await Process.start(
-      geminiCommand,
-      [
-      'gen',
-      ]
-    );
+    final process = await Process.start(geminiCommand, ['gen']);
     process.stdin.write(fullPrompt);
     await process.stdin.close();
 
@@ -97,7 +97,9 @@ $protocolDefinitionContent
     final geminiError = await stderrFuture;
 
     if (exitCode != 0) {
-      fail('Gemini command "$geminiCommand" failed to execute. Error: $geminiError');
+      fail(
+        'Gemini command "$geminiCommand" failed to execute. Error: $geminiError',
+      );
     }
     // 8. Apply conditional logic based on draft status.
     final hasDifferences = !geminiOutput.trim().contains(

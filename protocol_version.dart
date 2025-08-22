@@ -13,7 +13,8 @@ const bool autheetProtocolVersionImplementationStatusDraft = true;
 
 /// The path to the Markdown file containing the Autheet Protocol Definition relative to the lib/models directory.
 /// This is used by the protocol compliance test.
-const String autheetProtocolDefinitionPath = 'lib/models/Autheet Protocol Definition.md';
+const String autheetProtocolDefinitionPath =
+    'lib/models/Autheet Protocol Definition.md';
 
 /// The URL to the Markdown file containing the Autheet Protocol Definition.
 /// This is used by the protocol compliance test if the other is not found.
