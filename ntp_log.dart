@@ -1,6 +1,5 @@
 // lib/models/ntp_log.dart
 import 'package:autheet/models/protocol_version.dart';
-import 'package:autheet/models/find_model.dart';
 
 class NtpLog {
   String server;

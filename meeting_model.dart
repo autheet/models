@@ -7,7 +7,6 @@ import 'dart:math';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:autheet/models/protocol_version.dart';
-import 'package:autheet/models/meeting_block_model.dart';
 
 // --- Date/Time Utility ---
 

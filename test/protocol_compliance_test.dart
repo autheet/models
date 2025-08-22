@@ -2,7 +2,6 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:path/path.dart' as p;
 import 'dart:convert';
 import 'package:autheet/models/protocol_version.dart'; // Import the protocol_version.dart file
 
@@ -13,7 +12,6 @@ void main() {
   // This test uses an LLM to check for differences between the protocol specification and the implementation in the data models.
   test('Protocol Compliance Test', () async {
     // Define the models directory path.
-    const modelsPath = 'lib/models';
 
     // Directly use the constants from protocol_version.dart
     const isDraft = autheetProtocolVersionImplementationStatusDraft;
@@ -52,8 +50,7 @@ void main() {
         'Using local protocol definition file: lib/models/$autheetProtocolDefinitionPath',
       );
     }
-    if (protocolDefinitionContent == null ||
-        protocolDefinitionContent.isEmpty) {
+    if (protocolDefinitionContent.isEmpty) {
       fail(
         'Protocol definition content is empty after attempting to read or download. '
         'Ensure the local file exists and is not empty, or the URL provides valid content.',
