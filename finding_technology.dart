@@ -97,7 +97,7 @@ class BluetoothPatternTechnology extends FindingTechnology {
   BluetoothPatternTechnology(NTPService ntpService)
     : super(
         settingsKey: 'finding_technology_ble_pattern_enabled',
-        defaultEnabled: true,
+        defaultEnabled: false,
         nameLocalizationKey: 'bluetooth',
         descriptionLocalizationKey: 'bluetoothDescription',
         technologyName: 'bluetooth',
@@ -126,7 +126,7 @@ class UwbTechnology extends FindingTechnology {
   UwbTechnology()
     : super(
         settingsKey: 'finding_technology_uwb_enabled',
-        defaultEnabled: true,
+        defaultEnabled: false,
         nameLocalizationKey: 'uwb',
         descriptionLocalizationKey: 'uwbDescription',
         technologyName: 'uwb',
@@ -144,7 +144,7 @@ class NfcCardTechnology extends FindingTechnology {
   NfcCardTechnology(NfcProvider nfcProvider)
     : super(
         settingsKey: 'finding_technology_nfc_card_enabled',
-        defaultEnabled: true,
+        defaultEnabled: false,
         nameLocalizationKey: 'nfcCard',
         descriptionLocalizationKey: 'nfcCardDescription',
         technologyName: 'nfcCard',
