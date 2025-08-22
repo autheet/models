@@ -96,6 +96,22 @@ Stores a user's public key information.
 
 ### `NtpLog`
 
+### `UserProfilePrivate`
+
+This model represents the **currently logged-in user's** private settings and information.
+
+*   **Purpose**: To store the user's personal configurations and sensitive information that is not intended for public sharing or discovery by other users.
+*   **Contents**: Includes the user's `uid`, `email`, `UserSettings` (which control privacy and app behavior), and `autheetDeviceName`.
+*   **Firestore Storage (`toFirestore`)**: Data from this model is stored in Firestore, typically under a user-specific path.
+*   **Local Storage**: This model is also stored locally for quick access to user settings and private information.
+*   **Privacy**: This model explicitly handles data that should remain private to the user and is not used in public-facing features like user discovery or meeting participation in a way that would reveal this private information to others.
+
+---
+
+### `UserProfilePublic`
+
+This model represents the **public profile information of other users**. It contains the data that a logged-in user is allowed to see about another user.
+
 *   **Firestore Storage**: This model is **not stored in Firestore**.
 *   **Local Storage (`toLocalJson` / `fromLocalJson`)**: The entire object is saved to the local device database (e.g., via `DatabaseService`). This includes the NTP server, timestamps, time offset, and any errors.
 *   **Purpose**: This is purely a diagnostic and debugging model. It helps analyze the reliability and performance of time synchronization, which is critical for other protocols that rely on coordinated time. It has no PII and no ZKP applicability.

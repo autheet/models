@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 // Use a prefix to prevent name collisions with class members.
 import 'package:autheet/models/protocol_version.dart' as pv;
 
-
 DateTime? _parseFirestoreTimestamp(dynamic timestamp) {
   if (timestamp is int) {
     return DateTime.fromMillisecondsSinceEpoch(timestamp);
@@ -40,11 +39,11 @@ class PatternCryptor {
   /// Returns the secret key, deriving it only on the first call.
   Future<SecretKey> getSecretKey() async {
     if (_cachedSecretKey != null) return _cachedSecretKey!;
-    
-    _cachedSecretKey = await compute(computeArgonForEncryptionKey, ArgonDerivationParams(
-      password: clientPattern,
-      nonce: auHourlyDigest,
-    ));
+
+    _cachedSecretKey = await compute(
+      computeArgonForEncryptionKey,
+      ArgonDerivationParams(password: clientPattern, nonce: auHourlyDigest),
+    );
     return _cachedSecretKey!;
   }
 
@@ -52,32 +51,34 @@ class PatternCryptor {
   Future<String> getArgonPattern() async {
     if (_cachedArgonPattern != null) return _cachedArgonPattern!;
 
-    _cachedArgonPattern = await compute(computeArgonForPattern, ArgonDerivationParams(
-      password: clientPattern,
-      nonce: auHourlyDigest,
-    ));
+    _cachedArgonPattern = await compute(
+      computeArgonForPattern,
+      ArgonDerivationParams(password: clientPattern, nonce: auHourlyDigest),
+    );
     return _cachedArgonPattern!;
   }
 
   /// Encrypts the payload using the (now cached) secret key.
   Future<String> encrypt(String plaintext) async {
     final secretKey = await getSecretKey();
-    return await compute(computeAesGcmEncrypt, AesGcmEncryptParams(
-      secretKey: secretKey,
-      plaintext: plaintext,
-    ));
+    return await compute(
+      computeAesGcmEncrypt,
+      AesGcmEncryptParams(secretKey: secretKey, plaintext: plaintext),
+    );
   }
 
   /// Decrypts the payload using the (now cached) secret key.
   Future<String?> decrypt(String encryptedPayload) async {
     final secretKey = await getSecretKey();
-    return await compute(computeAesGcmDecrypt, AesGcmDecryptParams(
-      secretKey: secretKey,
-      encodedCiphertext: encryptedPayload,
-    ));
+    return await compute(
+      computeAesGcmDecrypt,
+      AesGcmDecryptParams(
+        secretKey: secretKey,
+        encodedCiphertext: encryptedPayload,
+      ),
+    );
   }
 }
-
 
 /// Represents a user found during the meeting recognition process.
 /// This model contains the decrypted, cleartext information about the other user.
@@ -103,14 +104,14 @@ class ClientFoundUser {
     'findingTechnology': findingTechnology,
   };
 
-  factory ClientFoundUser.fromLocalJson(Map<String, dynamic> json) => ClientFoundUser(
-    clientDecryptedUid: json['clientDecryptedUid'] ?? '',
-    clientDecryptedEmail: json['clientDecryptedEmail'] ?? '',
-    clientDecryptedMeetingId: json['clientDecryptedMeetingId'] ?? '',
-    findingTechnology: json['findingTechnology'] ?? '',
-  );
+  factory ClientFoundUser.fromLocalJson(Map<String, dynamic> json) =>
+      ClientFoundUser(
+        clientDecryptedUid: json['clientDecryptedUid'] ?? '',
+        clientDecryptedEmail: json['clientDecryptedEmail'] ?? '',
+        clientDecryptedMeetingId: json['clientDecryptedMeetingId'] ?? '',
+        findingTechnology: json['findingTechnology'] ?? '',
+      );
 }
-
 
 /// Represents a handshake document stored in the `handshakes` collection in Firestore.
 /// This model carefully separates data to ensure PII (Personally Identifiable Information)
@@ -131,15 +132,15 @@ class FindHandshake {
   /// A public, non-reversible hash of the `clientPattern`.
   /// Used to find matching patterns in Firestore without revealing the pattern itself.
   final String argonPattern;
-  
+
   /// A public, non-reversible hash of the user's UID.
   /// Used to prevent a user from matching with their own handshake documents.
   final String argonUserId;
-  
+
   /// The encrypted payload containing the `ClientFoundUser` data.
   /// Can only be decrypted by a user who has the same `clientPattern`.
   final String encryptedPayload;
-  
+
   /// The specific technology (e.g., BLE, Sound) that generated this handshake.
   /// This is crucial for analytics and debugging to understand which methods are
   /// most effective and to diagnose technology-specific issues.
@@ -164,7 +165,7 @@ class FindHandshake {
     DateTime? createdAt,
     this.serverTimestamp,
   }) : createdAt = createdAt ?? DateTime.now();
-  
+
   /// Factory to create a new handshake instance.
   /// This is the primary and safest way to create a handshake, as it enforces
   /// the entire security model (hashing, encryption, PII separation).
@@ -175,17 +176,16 @@ class FindHandshake {
     required PatternCryptor cryptor,
     required TechnologyType technologyType,
   }) async {
-    
     // 1. Get the public pattern hash from the cryptor (now cached).
     final argonPattern = await cryptor.getArgonPattern();
-    
+
     // 2. Create a public, non-reversible hash of the user's ID.
     // This is still computed separately as it doesn't depend on the clientPattern.
-    final argonUserId = await compute(computeArgonForUserId, ArgonDerivationParams(
-      password: userId,
-      nonce: cryptor.auHourlyDigest,
-    ));
-    
+    final argonUserId = await compute(
+      computeArgonForUserId,
+      ArgonDerivationParams(password: userId, nonce: cryptor.auHourlyDigest),
+    );
+
     // 3. Create the payload with the user's actual information.
     final payload = ClientFoundUser(
       clientDecryptedUid: userId,
@@ -193,10 +193,12 @@ class FindHandshake {
       clientDecryptedMeetingId: meetingId,
       findingTechnology: technologyType.name,
     );
-    
+
     // 4. Encrypt the payload using the cryptor (which uses its cached key).
-    final encryptedPayload = await cryptor.encrypt(jsonEncode(payload.toLocalJson()));
-    
+    final encryptedPayload = await cryptor.encrypt(
+      jsonEncode(payload.toLocalJson()),
+    );
+
     // 5. Return the fully constructed handshake object.
     // The handshake is stamped with the current protocol version from the single
     // source of truth and now includes the digest it was created with.
@@ -211,19 +213,19 @@ class FindHandshake {
     );
   }
 
-
   /// Creates a representation of the handshake suitable for storing in Firestore.
   /// Note the intentional omission of `clientPattern` and `auHourlyDigest` to protect PII.
   Map<String, dynamic> toFirestoreJson() => {
     'argon_pattern': argonPattern,
     'argon_userid': argonUserId,
     'encrypted_payload': encryptedPayload,
-    'technology_type': technologyType.name, // Stored as a string for easy querying.
+    'technology_type':
+        technologyType.name, // Stored as a string for easy querying.
     'autheet_protocol_version': autheetProtocolVersion,
     'created_at': createdAt.millisecondsSinceEpoch,
     'server_timestamp': FieldValue.serverTimestamp(),
   };
-  
+
   /// Creates a representation of the handshake suitable for local caching.
   /// Includes all data needed to fully reconstruct the object.
   Map<String, dynamic> toLocalJson() => {
@@ -248,10 +250,13 @@ class FindHandshake {
       argonPattern: json['argon_pattern'] ?? '',
       argonUserId: json['argon_userid'] ?? '',
       encryptedPayload: json['encrypted_payload'] ?? '',
-      technologyType: TechnologyType.values.byName(json['technology_type'] ?? 'unknown'),
+      technologyType: TechnologyType.values.byName(
+        json['technology_type'] ?? 'unknown',
+      ),
       // Read the original protocol version from the document.
       // If it's missing, fall back to the current version.
-      autheetProtocolVersion: json['autheet_protocol_version'] ?? pv.autheetProtocolVersion,
+      autheetProtocolVersion:
+          json['autheet_protocol_version'] ?? pv.autheetProtocolVersion,
       createdAt: _parseFirestoreTimestamp(json['created_at']) ?? DateTime.now(),
       serverTimestamp: _parseFirestoreTimestamp(json['server_timestamp']),
     );
@@ -265,10 +270,13 @@ class FindHandshake {
       argonPattern: json['argon_pattern'] ?? '',
       argonUserId: json['argon_userid'] ?? '',
       encryptedPayload: json['encrypted_payload'] ?? '',
-      technologyType: TechnologyType.values.byName(json['technology_type'] ?? 'unknown'),
+      technologyType: TechnologyType.values.byName(
+        json['technology_type'] ?? 'unknown',
+      ),
       // Read the original protocol version from the document.
       // If it's missing, fall back to the current version.
-      autheetProtocolVersion: json['autheet_protocol_version'] ?? pv.autheetProtocolVersion,
+      autheetProtocolVersion:
+          json['autheet_protocol_version'] ?? pv.autheetProtocolVersion,
       createdAt: _parseFirestoreTimestamp(json['created_at']) ?? DateTime.now(),
       serverTimestamp: _parseFirestoreTimestamp(json['server_timestamp']),
     );

@@ -7,7 +7,7 @@ import 'dart:math';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:autheet/models/protocol_version.dart';
-import 'package:autheet/models/meeting_block_model.dart';
+import 'package:flutter/foundation.dart';
 
 // --- Date/Time Utility ---
 
@@ -38,27 +38,61 @@ String generateEncryptionNonce() {
   return base64.encode(values);
 }
 
-Future<String> encryptData(String jsonData, String secret, String nonceString) async {
+Future<String> encryptData(
+  String jsonData,
+  String secret,
+  String nonceString,
+) async {
   final algorithm = AesGcm.with256bits();
-  final secretKey = await algorithm.newSecretKeyFromBytes(sha256.convert(utf8.encode(secret)).bytes);
+  final secretKey = await algorithm.newSecretKeyFromBytes(
+    sha256.convert(utf8.encode(secret)).bytes,
+  );
   final nonce = base64.decode(nonceString);
-  final secretBox = await algorithm.encrypt(utf8.encode(jsonData), secretKey: secretKey, nonce: nonce);
+  final secretBox = await algorithm.encrypt(
+    utf8.encode(jsonData),
+    secretKey: secretKey,
+    nonce: nonce,
+  );
   return base64.encode(secretBox.concatenation());
 }
 
-Future<String> decryptData(String encryptedPayload, String secret, String nonceString) async {
+Future<String> decryptData(
+  String encryptedPayload,
+  String secret,
+  String nonceString,
+) async {
   final algorithm = AesGcm.with256bits();
-  final secretKey = await algorithm.newSecretKeyFromBytes(sha256.convert(utf8.encode(secret)).bytes);
+  final secretKey = await algorithm.newSecretKeyFromBytes(
+    sha256.convert(utf8.encode(secret)).bytes,
+  );
   final encryptedBytes = base64.decode(encryptedPayload);
-  final secretBox = SecretBox.fromConcatenation(encryptedBytes, nonceLength: 12, macLength: 16);
-  final decryptedBytes = await algorithm.decrypt(secretBox, secretKey: secretKey);
+  final secretBox = SecretBox.fromConcatenation(
+    encryptedBytes,
+    nonceLength: 12,
+    macLength: 16,
+  );
+  final decryptedBytes = await algorithm.decrypt(
+    secretBox,
+    secretKey: secretKey,
+  );
   return utf8.decode(decryptedBytes);
 }
 
 // --- Enums and Helper Classes ---
 
-enum MeetingStatus { clientCreated, clientOpen, clientClosed, signed, submitted, confirmed, stored, error }
+enum MeetingStatus {
+  clientCreated,
+  clientOpen,
+  clientClosed,
+  signed,
+  submitted,
+  confirmed,
+  stored,
+  error,
+}
+
 enum SignatureGeneration { client, server }
+
 enum SignatureType { biometric, x509 }
 
 class MeetingEncryptedData {
@@ -102,13 +136,20 @@ class MeetingEncryptedData {
     'signatures': signatures.map((s) => s.toLocalJson()).toList(),
   };
 
-  factory MeetingEncryptedData.fromLocalJson(Map<String, dynamic> json) => MeetingEncryptedData(
-    meetingName: json['meetingName'] as String? ?? '',
-    auHourlyDigest: json['auHourlyDigest'] as String? ?? '',
-    participantUids: List<String>.from(json['participantUids'] as List? ?? []),
-    foundUsers: (json['foundUsers'] as List<dynamic>? ?? []).map((j) => ClientFoundUser.fromLocalJson(j)).toList(),
-    signatures: (json['signatures'] as List<dynamic>? ?? []).map((j) => MeetingSignature.fromLocalJson(j)).toList(),
-  );
+  factory MeetingEncryptedData.fromLocalJson(Map<String, dynamic> json) =>
+      MeetingEncryptedData(
+        meetingName: json['meetingName'] as String? ?? '',
+        auHourlyDigest: json['auHourlyDigest'] as String? ?? '',
+        participantUids: List<String>.from(
+          json['participantUids'] as List? ?? [],
+        ),
+        foundUsers: (json['foundUsers'] as List<dynamic>? ?? [])
+            .map((j) => ClientFoundUser.fromLocalJson(j))
+            .toList(),
+        signatures: (json['signatures'] as List<dynamic>? ?? [])
+            .map((j) => MeetingSignature.fromLocalJson(j))
+            .toList(),
+      );
 }
 
 class MeetingModel {
@@ -150,10 +191,15 @@ class MeetingModel {
     required String hourlyDigest,
     required List<ClientFoundUser> found,
   }) {
-    final secret = sha256.convert(utf8.encode(Random.secure().nextDouble().toString())).toString();
+    final secret = sha256
+        .convert(utf8.encode(Random.secure().nextDouble().toString()))
+        .toString();
     final chain = generateZkpHashChain(secret);
-    final participants = [creatorUid, ...found.map((u) => u.clientDecryptedUid)];
-    
+    final participants = [
+      creatorUid,
+      ...found.map((u) => u.clientDecryptedUid),
+    ];
+
     return MeetingModel(
       id: FirebaseFirestore.instance.collection('temp').doc().id,
       createdByUid: creatorUid,
@@ -180,7 +226,10 @@ class MeetingModel {
       createdByUid: data['created_by_uid'] ?? '',
       createdAt: _parseFirestoreTimestamp(data['created_at']) ?? DateTime.now(),
       serverTimestamp: _parseFirestoreTimestamp(data['server_timestamp']),
-      status: MeetingStatus.values.firstWhere((e) => e.name == data['status'], orElse: () => MeetingStatus.error),
+      status: MeetingStatus.values.firstWhere(
+        (e) => e.name == data['status'],
+        orElse: () => MeetingStatus.error,
+      ),
       encryptionNonce: data['encryption_nonce'] ?? '',
       encryptedPayload: data['encrypted_payload'],
       hashedMeetingSecret: data['hashed_meeting_secret'] ?? '',
@@ -193,9 +242,13 @@ class MeetingModel {
     if (decryptedData == null) {
       throw StateError("Cannot save to Firestore, decryptedData is null.");
     }
-    
+
     final payloadJson = json.encode(decryptedData!.toLocalJson());
-    final payloadEncrypted = await encryptData(payloadJson, meetingSecret, encryptionNonce);
+    final payloadEncrypted = await encryptData(
+      payloadJson,
+      meetingSecret,
+      encryptionNonce,
+    );
 
     return {
       'autheet_protocol_version': autheetProtocolVersion,
@@ -210,15 +263,21 @@ class MeetingModel {
       'encrypted_payload': payloadEncrypted,
     };
   }
-  
+
   Future<MeetingModel> decrypt(String clientSecret) async {
     if (encryptedPayload == null) return this;
     try {
-      final decryptedJson = await decryptData(encryptedPayload!, clientSecret, encryptionNonce);
-      final data = MeetingEncryptedData.fromLocalJson(json.decode(decryptedJson));
+      final decryptedJson = await decryptData(
+        encryptedPayload!,
+        clientSecret,
+        encryptionNonce,
+      );
+      final data = MeetingEncryptedData.fromLocalJson(
+        json.decode(decryptedJson),
+      );
       return copyWith(decryptedData: data, meetingSecret: clientSecret);
     } catch (e) {
-      print("Failed to decrypt meeting payload: $e");
+      debugPrint("Failed to decrypt meeting payload: $e");
       return this;
     }
   }
@@ -246,16 +305,25 @@ class MeetingModel {
       id: json['id'],
       createdByUid: json['createdByUid'],
       createdAt: DateTime.fromMillisecondsSinceEpoch(json['createdAt']),
-      serverTimestamp: json['serverTimestamp'] != null ? DateTime.fromMillisecondsSinceEpoch(json['serverTimestamp']) : null,
-      status: MeetingStatus.values.firstWhere((e) => e.name == json['status'], orElse: () => MeetingStatus.error),
+      serverTimestamp: json['serverTimestamp'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(json['serverTimestamp'])
+          : null,
+      status: MeetingStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => MeetingStatus.error,
+      ),
       encryptionNonce: json['encryptionNonce'],
       encryptedPayload: json['encryptedPayload'],
       hashedMeetingSecret: json['hashedMeetingSecret'],
       meetingName: json['meetingName'] ?? '',
       participantCount: json['participantCount'] ?? 0,
       meetingSecret: json['meetingSecret'],
-      decryptedData: json['decryptedData'] != null ? MeetingEncryptedData.fromLocalJson(json['decryptedData']) : null,
-      handshakes: (json['handshakes'] as List<dynamic>? ?? []).map((h) => FindHandshake.fromLocalJson(h)).toList(),
+      decryptedData: json['decryptedData'] != null
+          ? MeetingEncryptedData.fromLocalJson(json['decryptedData'])
+          : null,
+      handshakes: (json['handshakes'] as List<dynamic>? ?? [])
+          .map((h) => FindHandshake.fromLocalJson(h))
+          .toList(),
     );
   }
 
@@ -310,7 +378,9 @@ class MeetingSignature {
     required this.type,
     required this.createdAt,
     required this.signedData,
-  }) : signedDataHash = sha256.convert(utf8.encode(json.encode(signedData))).toString();
+  }) : signedDataHash = sha256
+           .convert(utf8.encode(json.encode(signedData)))
+           .toString();
 
   Map<String, dynamic> toFirestoreJson() => {
     'signature': signature,
@@ -351,19 +421,20 @@ class MeetingSignature {
     'signed_data': signedData,
   };
 
-  factory MeetingSignature.fromLocalJson(Map<String, dynamic> json) => MeetingSignature(
-    signature: json['signature'] ?? '',
-    signedBy: json['signed_by'] ?? '',
-    publicKeyId: json['public_key_id'] ?? '',
-    generation: SignatureGeneration.values.firstWhere(
-      (e) => e.name == json['generation'],
-      orElse: () => SignatureGeneration.client,
-    ),
-    type: SignatureType.values.firstWhere(
-      (e) => e.name == json['type'],
-      orElse: () => SignatureType.biometric,
-    ),
-    createdAt: DateTime.fromMillisecondsSinceEpoch(json['created_at']),
-    signedData: Map<String, dynamic>.from(json['signed_data'] ?? {}),
-  );
+  factory MeetingSignature.fromLocalJson(Map<String, dynamic> json) =>
+      MeetingSignature(
+        signature: json['signature'] ?? '',
+        signedBy: json['signed_by'] ?? '',
+        publicKeyId: json['public_key_id'] ?? '',
+        generation: SignatureGeneration.values.firstWhere(
+          (e) => e.name == json['generation'],
+          orElse: () => SignatureGeneration.client,
+        ),
+        type: SignatureType.values.firstWhere(
+          (e) => e.name == json['type'],
+          orElse: () => SignatureType.biometric,
+        ),
+        createdAt: DateTime.fromMillisecondsSinceEpoch(json['created_at']),
+        signedData: Map<String, dynamic>.from(json['signed_data'] ?? {}),
+      );
 }

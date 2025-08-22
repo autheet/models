@@ -1,6 +1,5 @@
 // lib/models/user_profile_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:autheet/models/find_model.dart';
 import 'package:autheet/models/protocol_version.dart';
 
 /// Data model for another user's public profile information.
