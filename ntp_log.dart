@@ -18,19 +18,19 @@ class NtpLog {
   });
 
   Map<String, dynamic> toJson() => {
-        'autheet_protocol_version': autheetProtocolVersion,
-        'server': server,
-        'offsetMs': offsetMs,
-        'currentTimeMs': currentTimeMs,
-        'error': error,
-        'timestamp': timestamp.toIso8601String(),
-      };
+    'autheet_protocol_version': autheetProtocolVersion,
+    'server': server,
+    'offsetMs': offsetMs,
+    'currentTimeMs': currentTimeMs,
+    'error': error,
+    'timestamp': timestamp.toIso8601String(),
+  };
 
   factory NtpLog.fromJson(Map<String, dynamic> json) => NtpLog(
-        server: json['server'],
-        offsetMs: json['offsetMs'],
-        currentTimeMs: json['currentTimeMs'],
-        error: json['error'],
-        timestamp: DateTime.parse(json['timestamp']),
-      );
+    server: json['server'],
+    offsetMs: json['offsetMs'],
+    currentTimeMs: json['currentTimeMs'],
+    error: json['error'],
+    timestamp: DateTime.parse(json['timestamp']),
+  );
 }

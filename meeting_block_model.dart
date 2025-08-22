@@ -106,21 +106,22 @@ class MeetingSigningData {
     'created_at': createdAt.millisecondsSinceEpoch,
     'server_timestamp': serverTimestamp?.millisecondsSinceEpoch,
   };
-  
+
   factory MeetingSigningData.fromFirestoreJson(Map<String, dynamic> json) =>
-    MeetingSigningData(
-      meetingId: json['meeting_id'] ?? '',
-      hashedParticipantUids: List<String>.from(
-        json['hashed_participant_uids'] as List? ?? [],
-      ),
-      hashedOtherUsersMeetingIds: List<String>.from(
-        json['hashed_other_users_meeting_ids'] as List? ?? [],
-      ),
-      hashedMeetingSecret: json['hashed_meeting_secret'] ?? '',
-      previousBlockHash: json['previous_block_hash'] ?? '',
-      createdAt: _parseFirestoreTimestamp(json['created_at']) ?? DateTime.now(),
-      serverTimestamp: _parseFirestoreTimestamp(json['server_timestamp']),
-    );
+      MeetingSigningData(
+        meetingId: json['meeting_id'] ?? '',
+        hashedParticipantUids: List<String>.from(
+          json['hashed_participant_uids'] as List? ?? [],
+        ),
+        hashedOtherUsersMeetingIds: List<String>.from(
+          json['hashed_other_users_meeting_ids'] as List? ?? [],
+        ),
+        hashedMeetingSecret: json['hashed_meeting_secret'] ?? '',
+        previousBlockHash: json['previous_block_hash'] ?? '',
+        createdAt:
+            _parseFirestoreTimestamp(json['created_at']) ?? DateTime.now(),
+        serverTimestamp: _parseFirestoreTimestamp(json['server_timestamp']),
+      );
 
   factory MeetingSigningData.fromLocalJson(Map<String, dynamic> json) =>
       MeetingSigningData(
@@ -133,7 +134,8 @@ class MeetingSigningData {
         ),
         hashedMeetingSecret: json['hashed_meeting_secret'] ?? '',
         previousBlockHash: json['previous_block_hash'] ?? '',
-        createdAt: _parseFirestoreTimestamp(json['created_at']) ?? DateTime.now(),
+        createdAt:
+            _parseFirestoreTimestamp(json['created_at']) ?? DateTime.now(),
         serverTimestamp: _parseFirestoreTimestamp(json['server_timestamp']),
       );
 }
@@ -177,16 +179,18 @@ class ZkpChainModel {
         meetingId: json['meeting_id'] as String? ?? '',
         hashedMeetingSecret: json['hashed_meeting_secret'] as String? ?? '',
         zkpChain: List<String>.from(json['zkp_chain'] as List? ?? []),
-        createdAt: _parseFirestoreTimestamp(json['created_at']) ?? DateTime.now(),
+        createdAt:
+            _parseFirestoreTimestamp(json['created_at']) ?? DateTime.now(),
         serverTimestamp: _parseFirestoreTimestamp(json['server_timestamp']),
       );
-      
+
   factory ZkpChainModel.fromLocalJson(Map<String, dynamic> json) =>
       ZkpChainModel(
         meetingId: json['meeting_id'] as String? ?? '',
         hashedMeetingSecret: json['hashed_meeting_secret'] as String? ?? '',
         zkpChain: List<String>.from(json['zkp_chain'] as List? ?? []),
-        createdAt: _parseFirestoreTimestamp(json['created_at']) ?? DateTime.now(),
+        createdAt:
+            _parseFirestoreTimestamp(json['created_at']) ?? DateTime.now(),
         serverTimestamp: _parseFirestoreTimestamp(json['server_timestamp']),
       );
 }

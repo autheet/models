@@ -11,13 +11,7 @@ import 'package:flutter/foundation.dart'
 import 'package:uwb/flutter_uwb.dart';
 
 /// Enum for the different types of finding technologies.
-enum TechnologyType {
-  shakingPattern,
-  constantPattern,
-  uwb,
-  ble,
-  nfcCard,
-}
+enum TechnologyType { shakingPattern, constantPattern, uwb, ble, nfcCard }
 
 /// Abstract base class for a technology used to find other users.
 /// It defines the common interface for all finding technologies.
@@ -48,9 +42,10 @@ abstract class FindingTechnology {
   /// Returns a list of all available technologies.
   /// If [force] is true, it rebuilds the list, creating new generator instances.
   static Future<List<FindingTechnology>> getAvailableTechnologies(
-      NTPService ntpService,
-      NfcProvider nfcProvider,
-      {bool force = false}) async {
+    NTPService ntpService,
+    NfcProvider nfcProvider, {
+    bool force = false,
+  }) async {
     if (_availableTechnologies == null || force) {
       _availableTechnologies = [];
 
@@ -86,58 +81,58 @@ abstract class FindingTechnology {
 /// A concrete implementation for the 'shaking pattern' technology.
 class ShakingPatternTechnology extends FindingTechnology {
   ShakingPatternTechnology(NTPService ntpService)
-      : super(
-          settingsKey: 'finding_technology_shaking_pattern_enabled',
-          defaultEnabled: true,
-          nameLocalizationKey: 'shakingPattern',
-          descriptionLocalizationKey: 'shakeYourPhonesToFindEachOther',
-          technologyName: 'shakingPattern',
-          type: TechnologyType.shakingPattern,
-          generatorFactory: () => ShakingPatternGenerator(ntpService),
-        );
+    : super(
+        settingsKey: 'finding_technology_shaking_pattern_enabled',
+        defaultEnabled: true,
+        nameLocalizationKey: 'shakingPattern',
+        descriptionLocalizationKey: 'shakeYourPhonesToFindEachOther',
+        technologyName: 'shakingPattern',
+        type: TechnologyType.shakingPattern,
+        generatorFactory: () => ShakingPatternGenerator(ntpService),
+      );
 }
 
 /// A concrete implementation for the Bluetooth LE technology.
 class BluetoothPatternTechnology extends FindingTechnology {
   BluetoothPatternTechnology(NTPService ntpService)
-      : super(
-          settingsKey: 'finding_technology_ble_pattern_enabled',
-          defaultEnabled: true,
-          nameLocalizationKey: 'bluetooth',
-          descriptionLocalizationKey: 'bluetoothDescription',
-          technologyName: 'bluetooth',
-          type: TechnologyType.ble,
-          generatorFactory: () => BluetoothPatternGenerator(),
-        );
+    : super(
+        settingsKey: 'finding_technology_ble_pattern_enabled',
+        defaultEnabled: true,
+        nameLocalizationKey: 'bluetooth',
+        descriptionLocalizationKey: 'bluetoothDescription',
+        technologyName: 'bluetooth',
+        type: TechnologyType.ble,
+        generatorFactory: () => BluetoothPatternGenerator(),
+      );
 }
 
 /// A concrete implementation for the test-only 'constant pattern' technology.
 class ConstantPatternTechnology extends FindingTechnology {
   ConstantPatternTechnology()
-      : super(
-          settingsKey: 'finding_technology_constant_pattern_enabled',
-          defaultEnabled: false,
-          nameLocalizationKey: 'constantPattern',
-          descriptionLocalizationKey: 'constantPatternDescription',
-          technologyName: 'constantPattern',
-          type: TechnologyType.constantPattern,
-          generatorFactory: () => ConstantPatternGenerator(),
-          isDebug: true,
-        );
+    : super(
+        settingsKey: 'finding_technology_constant_pattern_enabled',
+        defaultEnabled: false,
+        nameLocalizationKey: 'constantPattern',
+        descriptionLocalizationKey: 'constantPatternDescription',
+        technologyName: 'constantPattern',
+        type: TechnologyType.constantPattern,
+        generatorFactory: () => ConstantPatternGenerator(),
+        isDebug: true,
+      );
 }
 
 /// A concrete implementation for the UWB technology.
 class UwbTechnology extends FindingTechnology {
   UwbTechnology()
-      : super(
-          settingsKey: 'finding_technology_uwb_enabled',
-          defaultEnabled: true,
-          nameLocalizationKey: 'uwb',
-          descriptionLocalizationKey: 'uwbDescription',
-          technologyName: 'uwb',
-          type: TechnologyType.uwb,
-          generatorFactory: () => UwbPatternGenerator(),
-        );
+    : super(
+        settingsKey: 'finding_technology_uwb_enabled',
+        defaultEnabled: true,
+        nameLocalizationKey: 'uwb',
+        descriptionLocalizationKey: 'uwbDescription',
+        technologyName: 'uwb',
+        type: TechnologyType.uwb,
+        generatorFactory: () => UwbPatternGenerator(),
+      );
 
   Future<bool> isSupported() async {
     return await Uwb().isUwbSupported();
@@ -147,13 +142,13 @@ class UwbTechnology extends FindingTechnology {
 /// A concrete implementation for the NFC card technology.
 class NfcCardTechnology extends FindingTechnology {
   NfcCardTechnology(NfcProvider nfcProvider)
-      : super(
-          settingsKey: 'finding_technology_nfc_card_enabled',
-          defaultEnabled: true,
-          nameLocalizationKey: 'nfcCard',
-          descriptionLocalizationKey: 'nfcCardDescription',
-          technologyName: 'nfcCard',
-          type: TechnologyType.nfcCard,
-          generatorFactory: () => NfcCardPatternGenerator(nfcProvider),
-        );
+    : super(
+        settingsKey: 'finding_technology_nfc_card_enabled',
+        defaultEnabled: true,
+        nameLocalizationKey: 'nfcCard',
+        descriptionLocalizationKey: 'nfcCardDescription',
+        technologyName: 'nfcCard',
+        type: TechnologyType.nfcCard,
+        generatorFactory: () => NfcCardPatternGenerator(nfcProvider),
+      );
 }
