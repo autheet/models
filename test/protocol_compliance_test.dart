@@ -19,7 +19,7 @@ void main() {
     const protocolDefinitionUrl = autheetProtocolDefinitionUrl;
 
     String? protocolDefinitionContent;
-    final localProtocolDefinitionFile = File('$protocolDefinitionFileName');
+    final localProtocolDefinitionFile = File(protocolDefinitionFileName);
     if (await localProtocolDefinitionFile.exists()) {
       try {
         protocolDefinitionContent = await localProtocolDefinitionFile
