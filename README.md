@@ -10,8 +10,8 @@ For detailed explanations of the models, including their serialization strategie
 
 For a high-level overview and the vision behind Autheet, please see the:
 
-[Autheet Pitch Deck](https://app.autheet.com/pitch-deck.html)
+[Autheet Pitch Deck](https://ai.geo.autheet.com/pitch-deck.html)
 
 If you're interested in joining the test program, visit the:
 
-[Test Program Landing Page](https://app.autheet.com/test-landing.html)
+[Test Program Landing Page](https://ai.geo.autheet.com/test-landing.html)
