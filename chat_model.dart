@@ -14,38 +14,31 @@ class Chat {
     return Chat(id: doc.id, title: data['title'] as String? ?? 'Untitled');
   }
 
-  Map<String, dynamic> toJson() => {'id': id, 'title': title};
+  Map<String, dynamic> toJson() => {'title': title};
 }
 
 /// A collection of messages in a chat, using the toolkit's ChatMessage.
 class MessageCollection {
   MessageCollection({required CollectionReference collection})
-    : _collection = collection;
+      : _collection = collection;
 
   final CollectionReference _collection;
 
-  /// A stream of `ChatMessage` objects from Firestore.
-  Stream<List<toolkit.ChatMessage>> get stream => _collection
-      .orderBy('timestamp')
-      .snapshots()
-      .map(
-        (snapshot) => snapshot.docs
-            .map(
-              (doc) => toolkit.ChatMessage.fromJson(
-                doc.data() as Map<String, dynamic>,
-              ),
-            )
-            .toList(),
-      );
+  /// A stream of `ChatMessage` objects from Firestore, sorted by timestamp.
+  Stream<List<toolkit.ChatMessage>> get stream =>
+      _collection.orderBy('deletion_timestamp').snapshots().map( //by using deletion_timestamp, no extra index should be needed. 
+            (snapshot) => snapshot.docs
+                .map((doc) => toolkit.ChatMessage.fromJson(
+                    doc.data() as Map<String, dynamic>))
+                .toList(),
+          );
 
   /// Fetches the entire chat history once from Firestore.
   Future<List<toolkit.ChatMessage>> history() async {
-    final snapshot = await _collection.orderBy('timestamp').get();
+    final snapshot = await _collection.orderBy('deletion_timestamp').get(); //by using deletion_timestamp, no extra index should be needed. 
     return snapshot.docs
-        .map(
-          (doc) =>
-              toolkit.ChatMessage.fromJson(doc.data() as Map<String, dynamic>),
-        )
+        .map((doc) =>
+            toolkit.ChatMessage.fromJson(doc.data() as Map<String, dynamic>))
         .toList();
   }
 
@@ -54,9 +47,8 @@ class MessageCollection {
     final doc = await _collection.add({
       ...message.toJson(),
       'timestamp': FieldValue.serverTimestamp(),
-      'deletionTimestamp': Timestamp.fromDate(
-        DateTime.now().add(const Duration(days: 30)),
-      ),
+      'deletion_timestamp':
+          Timestamp.fromDate(DateTime.now().add(const Duration(days: 30))),
     });
     return doc.id;
   }
