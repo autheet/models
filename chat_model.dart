@@ -20,25 +20,35 @@ class Chat {
 /// A collection of messages in a chat, using the toolkit's ChatMessage.
 class MessageCollection {
   MessageCollection({required CollectionReference collection})
-      : _collection = collection;
+    : _collection = collection;
 
   final CollectionReference _collection;
 
   /// A stream of `ChatMessage` objects from Firestore, sorted by timestamp.
-  Stream<List<toolkit.ChatMessage>> get stream =>
-      _collection.orderBy('deletion_timestamp').snapshots().map( //by using deletion_timestamp, no extra index should be needed. 
-            (snapshot) => snapshot.docs
-                .map((doc) => toolkit.ChatMessage.fromJson(
-                    doc.data() as Map<String, dynamic>))
-                .toList(),
-          );
+  Stream<List<toolkit.ChatMessage>> get stream => _collection
+      .orderBy('deletion_timestamp')
+      .snapshots()
+      .map(
+        //by using deletion_timestamp, no extra index should be needed.
+        (snapshot) => snapshot.docs
+            .map(
+              (doc) => toolkit.ChatMessage.fromJson(
+                doc.data() as Map<String, dynamic>,
+              ),
+            )
+            .toList(),
+      );
 
   /// Fetches the entire chat history once from Firestore.
   Future<List<toolkit.ChatMessage>> history() async {
-    final snapshot = await _collection.orderBy('deletion_timestamp').get(); //by using deletion_timestamp, no extra index should be needed. 
+    final snapshot = await _collection
+        .orderBy('deletion_timestamp')
+        .get(); //by using deletion_timestamp, no extra index should be needed.
     return snapshot.docs
-        .map((doc) =>
-            toolkit.ChatMessage.fromJson(doc.data() as Map<String, dynamic>))
+        .map(
+          (doc) =>
+              toolkit.ChatMessage.fromJson(doc.data() as Map<String, dynamic>),
+        )
         .toList();
   }
 
@@ -47,8 +57,9 @@ class MessageCollection {
     final doc = await _collection.add({
       ...message.toJson(),
       'timestamp': FieldValue.serverTimestamp(),
-      'deletion_timestamp':
-          Timestamp.fromDate(DateTime.now().add(const Duration(days: 30))),
+      'deletion_timestamp': Timestamp.fromDate(
+        DateTime.now().add(const Duration(days: 30)),
+      ),
     });
     return doc.id;
   }
