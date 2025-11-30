@@ -21,9 +21,9 @@ extension AIModeExtension on AIMode {
   String get modelName {
     switch (this) {
       case AIMode.standard:
-        return 'gemini-3.0-flash';
+        return 'gemini-2.5-pro';
       case AIMode.live:
-        return 'gemini-3.0-flash-live';
+        return 'gemini-2.5-flash-live';
     }
   }
 
