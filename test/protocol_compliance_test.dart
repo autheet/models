@@ -1,5 +1,7 @@
 // test/protocol_compliance_test.dart
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+// ignore: depend_on_referenced_packages
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -25,14 +27,14 @@ void main() {
         protocolDefinitionContent = await localProtocolDefinitionFile
             .readAsString();
       } catch (e) {
-        print(
+        debugPrint(
           'Warning: Could not read protocol definition file from $autheetProtocolDefinitionPath: $e',
         );
       }
     }
     // If local file reading failed OR if not in draft mode, attempt to download from the URL.
     if (protocolDefinitionContent == null || !isDraft) {
-      print(
+      debugPrint(
         'Attempting to download protocol definition from $protocolDefinitionUrl',
       );
       final response = await http.get(Uri.parse(protocolDefinitionUrl));
@@ -46,7 +48,7 @@ void main() {
       protocolDefinitionContent = response.body;
     } else {
       // If in draft mode and local file was successfully read, print a message.
-      print(
+      debugPrint(
         'Using local protocol definition file: lib/models/$autheetProtocolDefinitionPath',
       );
     }
@@ -106,7 +108,7 @@ $protocolDefinitionContent
     // Write the Gemini output to the specified file in the working directory.
     final outputFile = File(outputFilePath);
     await outputFile.writeAsString(geminiOutput);
-    print('Gemini output written to ${outputFile.path}');
+    debugPrint('Gemini output written to ${outputFile.path}');
 
     // 9. Handle differences based on draft status.
     if (isDraft) {
