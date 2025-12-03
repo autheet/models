@@ -43,15 +43,23 @@ class ArcoreToken {
   };
 
   factory ArcoreToken.fromJson(Map<String, dynamic> json) {
+    if (json['token'] == null) {
+      throw FormatException('Missing required field: token');
+    }
+    if (json['expiration'] == null) {
+      throw FormatException('Missing required field: expiration');
+    }
+    if (json['createdAt'] == null) {
+      throw FormatException('Missing required field: createdAt');
+    }
+
     return ArcoreToken(
       token: json['token'],
       expiration: DateTime.fromMillisecondsSinceEpoch(
         json['expiration'] * 1000,
       ),
       appVersion: json['appVersion'] ?? 'unknown',
-      createdAt: json['createdAt'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(json['createdAt'] * 1000)
-          : DateTime.now(), // Fallback if missing
+      createdAt: DateTime.fromMillisecondsSinceEpoch(json['createdAt'] * 1000),
       predecessorToken: json['predecessorToken'],
       successorToken: json['successorToken'],
       isRefreshing: json['isRefreshing'] ?? false,
