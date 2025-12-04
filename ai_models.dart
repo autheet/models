@@ -12,6 +12,10 @@ enum AIMode {
   /// Live bidirectional audio streaming with gemini-2.5-flash-live
   /// Automatically activated when chat widget height is < 20% of screen
   live,
+
+  /// Speech-to-text transcription using gemini-2.5-flash
+  /// Used specifically for transcribing voice messages
+  speechToText,
 }
 
 extension AIModeExtension on AIMode {
@@ -21,20 +25,27 @@ extension AIModeExtension on AIMode {
         return 'Text Chat';
       case AIMode.live:
         return 'Live Audio';
+      case AIMode.speechToText:
+        return 'Speech to Text';
     }
   }
 
   String get modelName {
     switch (this) {
       case AIMode.standard:
-        return 'gemini-2.5-pro';
+        return 'gemini-2.5-flash';
       case AIMode.live:
-        return 'gemini-2.5-flash-live';
+        return 'gemini-2.0-flash-exp';
+      case AIMode.speechToText:
+        return 'gemini-2.5-flash';
     }
   }
 
   bool get isLive => this == AIMode.live;
 }
+
+/// Default voice name for Live API
+const String defaultVoiceName = 'Puck';
 
 /// Configuration for route-specific AI system prompts
 ///
