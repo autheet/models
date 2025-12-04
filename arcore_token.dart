@@ -44,13 +44,13 @@ class ArcoreToken {
 
   factory ArcoreToken.fromJson(Map<String, dynamic> json) {
     if (json['token'] == null) {
-      throw FormatException('Missing required field: token');
+      throw const FormatException('Missing required field: token');
     }
     if (json['expiration'] == null) {
-      throw FormatException('Missing required field: expiration');
+      throw const FormatException('Missing required field: expiration');
     }
     if (json['createdAt'] == null) {
-      throw FormatException('Missing required field: createdAt');
+      throw const FormatException('Missing required field: createdAt');
     }
 
     return ArcoreToken(
