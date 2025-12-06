@@ -35,7 +35,7 @@ extension AIModeExtension on AIMode {
       case AIMode.standard:
         return 'gemini-2.5-flash';
       case AIMode.live:
-        return 'gemini-2.0-flash-exp';
+        return 'gemini-2.5-flash';
       case AIMode.speechToText:
         return 'gemini-2.5-flash';
     }
