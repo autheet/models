@@ -10,7 +10,6 @@ enum AIMode {
   standard,
 
   /// Live bidirectional audio streaming with gemini-2.5-flash-live
-  /// Automatically activated when chat widget height is < 20% of screen
   live,
 
   /// Speech-to-text transcription using gemini-2.5-flash
@@ -35,7 +34,7 @@ extension AIModeExtension on AIMode {
       case AIMode.standard:
         return 'gemini-2.5-flash';
       case AIMode.live:
-        return 'gemini-2.5-flash';
+        return "gemini-live-2.5-flash-preview-native-audio-09-2025"; //'gemini-live-2.5-flash'; //live models list  https://firebase.google.com/docs/ai-logic/live-api?api=vertex#before-you-begin
       case AIMode.speechToText:
         return 'gemini-2.5-flash';
     }
@@ -63,7 +62,7 @@ class AIRouteContext {
 
   /// Optional suggestions to display in the chat UI for this route
   /// These suggestions help users interact with AI on this specific screen
-  final List<String>? suggestions;
+  final List<SuggestionPrompt>? suggestions;
 
   /// Optional welcome messages to display in the chat UI for this route
   /// A random message from this list will be shown to the user
@@ -103,4 +102,15 @@ $systemPromptPart
         (DateTime.now().millisecondsSinceEpoch % welcomeMessages!.length);
     return welcomeMessages![random];
   }
+}
+
+/// Represents a suggested prompt that can be displayed to the user
+class SuggestionPrompt {
+  /// The label to display in the UI (e.g. "Summarize")
+  final String label;
+
+  /// The actual prompt text to send to the AI (e.g. "Please summarize the current context")
+  final String prompt;
+
+  const SuggestionPrompt({required this.label, required this.prompt});
 }

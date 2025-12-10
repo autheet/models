@@ -325,7 +325,7 @@ $systemPromptPart
     );
 
     provider.addListener(() {
-      _saveHistory(chatId, provider.history.toList());
+      _saveToolkitHistory(chatId, provider.history.toList());
       debugPrint(
         'ChatRepository: provider listener triggered. History length: ${provider.history.length}, Chat title: ${chat.title}',
       );
@@ -371,7 +371,8 @@ $systemPromptPart
         ).liveGenerativeModel(
           model: AIMode.live.modelName,
           liveGenerationConfig: config,
-          tools: hasTools ? [ai.Tool.functionDeclarations(declarations)] : [],
+          // tools: hasTools ? [ai.Tool.functionDeclarations(declarations)] : [],
+          tools: [], // Temporarily invalidating tools to debug timeout issues
         );
 
     debugPrint(
@@ -379,13 +380,15 @@ $systemPromptPart
     );
 
     // Create session with history update callback
+    // Create session with history update callback
     final session = LiveChatSession(
       chatId: chatId,
+      userId: _user.uid,
       model: liveModel,
       mcpToolsProvider: mcpToolsProvider,
       onHistoryUpdate: (updatedHistory) {
         // Save history updates to Firestore
-        _saveHistory(chatId, updatedHistory);
+        _saveLiveHistory(chatId, updatedHistory);
       },
     );
 
@@ -531,7 +534,21 @@ $systemPromptPart
     userId: _user.uid,
   );
 
-  Future<void> _saveHistory(
+  Future<void> _saveLiveHistory(
+    String chatId,
+    List<ChatMessage> history,
+  ) async {
+    final messages = messagesFor(chatId);
+    final currentHistory = await messages
+        .fetchHistory(); // Get as ChatMessage list
+    if (history.length > currentHistory.length) {
+      for (var i = currentHistory.length; i < history.length; i++) {
+        await messages.addCustom(history[i]);
+      }
+    }
+  }
+
+  Future<void> _saveToolkitHistory(
     String chatId,
     List<toolkit.ChatMessage> history,
   ) async {
