@@ -24,6 +24,7 @@ class UserChat {
   final String modelName;
   final List<String> availableTools;
   final bool isLive;
+  final List<String> tags;
 
   // The underlying ChatSession (composition, not inheritance)
   ai.ChatSession? _chatSession;
@@ -38,6 +39,7 @@ class UserChat {
     required this.modelName,
     this.availableTools = const [],
     this.isLive = false,
+    this.tags = const [],
     ai.ChatSession? chatSession,
   }) : _chatSession = chatSession;
 
@@ -66,6 +68,11 @@ class UserChat {
               .toList() ??
           [],
       isLive: data['is_live'] as bool? ?? false,
+      tags:
+          (data['scope_tags'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
     );
   }
 
@@ -84,6 +91,7 @@ class UserChat {
       'llm_model': modelName,
       'available_tools': availableTools,
       'is_live': isLive,
+      'scope_tags': tags,
       'server_timestamp': FieldValue.serverTimestamp(),
       'deletion_timestamp': Timestamp.fromDate(
         deletionTime,
@@ -105,6 +113,7 @@ class UserChat {
       'llm_model': modelName,
       'available_tools': availableTools,
       'is_live': isLive,
+      'scope_tags': tags,
       'server_timestamp': Timestamp.fromDate(
         now,
       ), // Actual timestamp, not sentinel
@@ -120,6 +129,7 @@ class UserChat {
       'created_at': createdAt.toIso8601String(),
       'mode': mode.name,
       'model': modelName,
+      'tags': tags,
     };
   }
 
@@ -139,6 +149,7 @@ class UserChat {
     String? modelName,
     List<String>? availableTools,
     bool? isLive,
+    List<String>? tags,
   }) {
     return UserChat(
       id: id,
@@ -150,6 +161,7 @@ class UserChat {
       modelName: modelName ?? this.modelName,
       availableTools: availableTools ?? this.availableTools,
       isLive: isLive ?? this.isLive,
+      tags: tags ?? this.tags,
       chatSession: _chatSession,
     );
   }
@@ -342,7 +354,10 @@ $systemPromptPart
   }
 
   /// Creates a Live session for real-time audio streaming with transcripts
-  Future<LiveChatSession> getLiveSession(String chatId) async {
+  Future<LiveChatSession> getLiveSession(
+    String chatId, {
+    List<String>? allowedTools,
+  }) async {
     debugPrint(
       'ChatRepository: Creating Live session for chat $chatId with user ${_user.uid}',
     );
@@ -353,8 +368,17 @@ $systemPromptPart
       return _liveSessions[chatId]!;
     }
 
-    final declarations = mcpToolsProvider.functionDeclarations;
-    final hasTools = declarations.isNotEmpty;
+    final effectiveAllowedLiveTools =
+        allowedTools ?? ['navigate', 'list_screens'];
+
+    final toolDeclarations = await mcpToolsProvider.getToolsForContext(
+      allowedTools: effectiveAllowedLiveTools,
+    );
+    final hasTools = toolDeclarations.isNotEmpty;
+
+    debugPrint(
+      'ChatRepository: Live Session Tools: ${toolDeclarations.map((t) => t.name).join(', ')}',
+    );
 
     // Configure Live API with transcription
     final config = ai.LiveGenerationConfig(
@@ -371,12 +395,13 @@ $systemPromptPart
         ).liveGenerativeModel(
           model: AIMode.live.modelName,
           liveGenerationConfig: config,
-          // tools: hasTools ? [ai.Tool.functionDeclarations(declarations)] : [],
-          tools: [], // Temporarily invalidating tools to debug timeout issues
+          tools: hasTools
+              ? [ai.Tool.functionDeclarations(toolDeclarations)]
+              : [],
         );
 
     debugPrint(
-      'ChatRepository: Created Live model with ${hasTools ? declarations.length : 0} tools',
+      'ChatRepository: Created Live model with ${hasTools ? toolDeclarations.length : 0} tools',
     );
 
     // Create session with history update callback
@@ -430,6 +455,7 @@ $systemPromptPart
   Future<String> createChat({
     AIMode mode = AIMode.standard,
     List<String>? tools,
+    List<String>? tags,
   }) async {
     final chatId = const Uuid().v4();
     final now = DateTime.now();
@@ -443,6 +469,7 @@ $systemPromptPart
       modelName: mode.modelName,
       availableTools: tools ?? [],
       isLive: mode.isLive,
+      tags: tags ?? [],
     );
 
     await _chatsCollection.doc(chatId).set(newChat.toFirestore());
@@ -461,6 +488,29 @@ $systemPromptPart
         .add(initialSettings.toFirestore());
 
     return chatId;
+  }
+
+  /// Finds the most recent chat with the given tag, or creates a new one.
+  Future<String> getOrCreateChatByTag(
+    String tag, {
+    AIMode mode = AIMode.standard,
+    List<String>? tools,
+  }) async {
+    // Check locally first (since we subscribe to snapshots)
+    try {
+      final existingChat = _chats.value.firstWhere(
+        (chat) => chat.tags.contains(tag),
+      );
+      return existingChat.id;
+    } catch (e) {
+      // Not found locally (StateError from firstWhere), check Firestore to be safe?
+      // Actually _chats.value should be up to date.
+      // So we create a new one.
+      debugPrint(
+        'ChatRepository: No chat found with tag "$tag". Creating new one.',
+      );
+      return createChat(mode: mode, tools: tools, tags: [tag]);
+    }
   }
 
   Future<void> deleteChat(String chatId) async {

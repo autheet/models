@@ -68,12 +68,22 @@ class AIRouteContext {
   /// A random message from this list will be shown to the user
   final List<String>? welcomeMessages;
 
+  /// Optional list of allowed MCP tool names (or prefixes) for Standard Mode
+  /// If null, defaults to ALL tools.
+  final List<String>? allowedTools;
+
+  /// Optional list of allowed MCP tool names (or prefixes) for Live Mode
+  /// If null, defaults to a RESTRICTED set (navigation only).
+  final List<String>? allowedLiveTools;
+
   const AIRouteContext({
     required this.path,
     this.systemPromptPart,
     required this.description,
     this.suggestions,
     this.welcomeMessages,
+    this.allowedTools,
+    this.allowedLiveTools,
   });
 
   /// Combines the route-specific prompt with a base system prompt
